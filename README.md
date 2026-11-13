@@ -17,7 +17,27 @@ Projeto em Python, LangChain e LangSmith que transforma relatos de bugs em User 
 | Escopo | A resposta fica a cargo do modelo. | A estrutura diferencia casos simples, falhas relacionadas e relatos insuficientes. A v2 pede que o modelo preserve fatos e sinalize hipóteses e dados a confirmar. |
 | Exemplos | Ausentes. | Três pares próprios, fora do dataset de avaliação. |
 
-A validação local cobre os seis requisitos estruturais com pytest. As notas das cinco métricas, o link público, as capturas do dashboard e os três traces dependem de um experimento executado com as credenciais do workspace. A avaliação oficial busca a v2 no Hub. A comparação acima descreve as diferenças de conteúdo entre as duas versões.
+As duas versões foram avaliadas nos mesmos 15 exemplos, com `gpt-4.1-mini` tanto na geração quanto no julgamento. A v2 publicada passou em cada métrica e atingiu média geral de **0,9076**.
+
+| Métrica | v1 original | v2 publicada | Variação |
+| --- | ---: | ---: | ---: |
+| Helpfulness | 0,9033 | 0,9073 | +0,0040 |
+| Correctness | 0,8814 | 0,9180 | +0,0366 |
+| F1-Score | 0,8094 | 0,8979 | +0,0885 |
+| Clarity | 0,8533 | 0,8767 | +0,0234 |
+| Precision | 0,9533 | 0,9380 | −0,0153 |
+| **Média geral** | **0,8801** | **0,9076** | **+0,0275** |
+
+O F1-Score teve o maior ganho. A Precision caiu 0,0153 na rodada oficial e permaneceu acima de 0,8. Foram três experimentos no mesmo dataset, com uma rodada para a v1 e duas para o mesmo conteúdo da v2. A rodada inicial da v2 foi executada com o prompt privado enquanto o handle era ativado e obteve média de 0,9176. A rodada oficial usou `python src/evaluate.py` com o prompt público no commit `e9a1c83c`.
+
+- [Prompt v2 público no LangSmith Hub](https://smith.langchain.com/hub/mba-ia-pull-evaluation-prompt/bug_to_user_story_v2)
+- [Dataset público com os 15 exemplos e os três experimentos](https://smith.langchain.com/public/eb9876ea-4409-4a85-8d14-40df1bddc579/d)
+- [Experimento oficial da v2 no workspace](https://smith.langchain.com/o/7682602c-6b74-45a0-9f6b-b5e5bc208ce4/datasets/68d64d2e-cb46-4278-80cc-a58213a03d6e/compare?selectedSessions=e8155866-5b5b-4d97-9c8c-1b1387813f3a)
+- Traces públicos da v2 inicial por complexidade. [Simples](https://smith.langchain.com/public/cf20ccdb-0197-4c8d-9df1-283fc0b56228/r) · [Médio](https://smith.langchain.com/public/451b014b-9e79-4947-b2e8-b2b26eb92f95/r) · [Complexo](https://smith.langchain.com/public/bffd88eb-e75b-4b3e-b261-db2293878dec/r)
+
+![Dashboard do LangSmith com as cinco métricas dos três experimentos](screenshots/langsmith-experimentos.jpg)
+
+[Captura dos exemplos](screenshots/langsmith-dataset.jpg) · [Captura de um trace](screenshots/langsmith-trace.jpg)
 
 ## Como Executar
 

@@ -7,7 +7,7 @@ from string import Formatter
 
 from langchain_core.prompts import ChatPromptTemplate
 from langsmith import Client
-from langsmith.utils import LangSmithError
+from langsmith.utils import LangSmithConflictError, LangSmithError
 
 from utils import check_env_vars, load_yaml, print_section_header, validate_prompt_structure
 
@@ -77,13 +77,18 @@ def push_prompt_to_langsmith(prompt_name: str, prompt_data: dict) -> bool:
 
     try:
         client = Client()
-        url = client.push_prompt(
-            prompt_name,
-            object=prompt,
-            is_public=True,
-            description=description,
-            tags=tags,
-        )
+        try:
+            url = client.push_prompt(
+                prompt_name,
+                object=prompt,
+                is_public=True,
+                description=description,
+                tags=tags,
+            )
+        except LangSmithConflictError as error:
+            if "nothing to commit: prompt has not changed" not in str(error).lower():
+                raise
+            url = client.push_prompt(prompt_name)
         published = client.get_prompt(prompt_name)
         if published is None or not published.is_public:
             print(f"O Hub não confirmou a publicação pública de {prompt_name}.", file=sys.stderr)
