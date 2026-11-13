@@ -1,45 +1,55 @@
-"""
-Testes automatizados para validação de prompts.
-"""
-import pytest
-import yaml
-import sys
+"""Validação do prompt otimizado em YAML."""
+
+import re
 from pathlib import Path
 
-# Adicionar src ao path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+import pytest
+import yaml
 
-from utils import validate_prompt_structure
+PROMPT_PATH = (
+    Path(__file__).resolve().parents[1] / "prompts" / "bug_to_user_story_v2.yml"
+)
 
-def load_prompts(file_path: str):
-    """Carrega prompts do arquivo YAML."""
-    with open(file_path, 'r', encoding='utf-8') as f:
-        return yaml.safe_load(f)
 
-class TestPrompts:
-    def test_prompt_has_system_prompt(self):
-        """Verifica se o campo 'system_prompt' existe e não está vazio."""
-        pass
+@pytest.fixture(scope="module")
+def prompt():
+    return yaml.safe_load(PROMPT_PATH.read_text(encoding="utf-8"))["bug_to_user_story_v2"]
 
-    def test_prompt_has_role_definition(self):
-        """Verifica se o prompt define uma persona (ex: "Você é um Product Manager")."""
-        pass
 
-    def test_prompt_mentions_format(self):
-        """Verifica se o prompt exige formato Markdown ou User Story padrão."""
-        pass
+def test_prompt_has_system_prompt(prompt):
+    assert isinstance(prompt.get("system_prompt"), str)
+    assert prompt["system_prompt"].strip()
 
-    def test_prompt_has_few_shot_examples(self):
-        """Verifica se o prompt contém exemplos de entrada/saída (técnica Few-shot)."""
-        pass
 
-    def test_prompt_no_todos(self):
-        """Garante que você não esqueceu nenhum `[TODO]` no texto."""
-        pass
+def test_prompt_has_role_definition(prompt):
+    assert re.search(r"\bvocê é um product manager\b", prompt["system_prompt"], re.IGNORECASE)
 
-    def test_minimum_techniques(self):
-        """Verifica (através dos metadados do yaml) se pelo menos 2 técnicas foram listadas."""
-        pass
 
-if __name__ == "__main__":
-    pytest.main([__file__, "-v", "--tb=short"])
+def test_prompt_mentions_format(prompt):
+    system = prompt["system_prompt"]
+    assert re.search(r"User Story em Markdown", system, re.IGNORECASE)
+    for part in ("Como [persona]", "eu quero", "para que", "Critérios de Aceitação"):
+        assert part in system
+
+
+def test_prompt_has_few_shot_examples(prompt):
+    examples = re.split(r"(?m)^### Exemplo \d+.*$", prompt["system_prompt"])[1:]
+    assert len(examples) >= 2
+    for example in examples:
+        assert re.fullmatch(r"\s*Entrada:\s*\S[\s\S]*?\n\s*Saída:\s*\S[\s\S]*", example)
+
+
+def test_prompt_no_todos():
+    assert "[TODO]" not in PROMPT_PATH.read_text(encoding="utf-8").upper()
+
+
+def test_minimum_techniques(prompt):
+    techniques = prompt["techniques_applied"]
+    assert isinstance(techniques, list)
+    assert all(isinstance(item, str) and item.strip() for item in techniques)
+    names = {item.strip().casefold() for item in techniques}
+    assert "few-shot learning" in names
+    assert names & {
+        "role prompting", "chain of thought", "tree of thought", "skeleton of thought", "react",
+    }
+    assert len(names) >= 2
